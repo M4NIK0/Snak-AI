@@ -16,8 +16,8 @@ from pygame.locals import (
 )
 
 class snake_node:
-    def __init__(self):
-        self.coords = [0, 0]
+    def __init__(self, x = 0, y = 0):
+        self.coords = [x, y]
         self.last_coords = [0, 0]
         self.rectangle = pygame.rect.Rect(self.coords[0], self.coords[1], 10, 10)
         self.direction = "up"
@@ -30,8 +30,9 @@ class snake_food:
         self.rectangle = pygame.rect.Rect(20, 20, 10, 10)
 
 class snake:
-    def __init__(self):
-        self.head = snake_node()
+    def __init__(self, grid):
+        self.head = snake_node(randint(0, len(grid[0]) - 1), randint(0, len(grid) - 1))
+        self.head.color = (255, 0, 0)
         self.tail = []
         self.tail_len = 0
         self.food = snake_food()
@@ -61,6 +62,15 @@ class snake:
         self.head.coords = direction_apply(grid, self.head.coords, self.head.direction)
         self.head.rectangle.left = self.head.coords[0] * 10
         self.head.rectangle.top = self.head.coords[1] * 10
+    
+    def render_snake(self, screen):
+        pygame.draw.rect(screen, self.food.color, self.food.rectangle)
+        pygame.draw.rect(screen, self.head.color, self.head.rectangle)
+        for i in self.tail:
+            pygame.draw.rect(screen, i.color, i.rectangle)
+
+colors_snake = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+colors_food = [(255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
 def direction_apply(grid, coordinates, direction):
     if direction == "down" and coordinates[1] < len(grid) - 1:
@@ -76,11 +86,11 @@ def direction_apply(grid, coordinates, direction):
 def cpy(to_cpy):
     return to_cpy
 
+player_amount = 3
 direction = "up"
 pixel_coords = [5, 5]
 screen_size = (250, 200)
 
-player = snake()
 
 pygame.init()
 
@@ -89,6 +99,10 @@ rectangle = pygame.rect.Rect(0, 0, 10, 10)
 # Set up the drawing window
 grid = [[0 for i in range(int(screen_size[0] / 10))] for i in range(int(screen_size[1] / 10))]
 screen = pygame.display.set_mode([screen_size[0], screen_size[1]])
+players = [snake(grid) for i in range(player_amount)]
+for i in players:
+    i.head.color = colors_snake[players.index(i)]
+    i.food.color = colors_snake[players.index(i)]
 print(len(grid[0]), len(grid))
 
 # Run until the user asks to quit
@@ -102,13 +116,17 @@ while running:
     for event in pygame.event.get():
         if event.type == KEYDOWN:
             if event.key == K_LEFT:
-                player.head.direction = "left"
+                for i in players:
+                    i.head.direction = "left"
             if event.key == K_RIGHT:
-                player.head.direction = "right"
+                for i in players:
+                    i.head.direction = "right"
             if event.key == K_UP:
-                player.head.direction = "up"
+                for i in players:
+                    i.head.direction = "up"
             if event.key == K_DOWN:
-                player.head.direction = "down"
+                for i in players:
+                    i.head.direction = "down"
 
         if event.type == pygame.QUIT:
             running = False
@@ -117,16 +135,15 @@ while running:
     screen.fill((0, 0, 0))
     
     # Update player position
-    for i in player.tail:
-        grid[i.coords[1]][i.coords[0]] = 1
-    player.move()
-    if grid[player.head.coords[1]][player.head.coords[0]] == 1:
-        print("You loose !")
-        running = False
-    for i in player.tail:
-        pygame.draw.rect(screen, (255, 255, 255), i.rectangle)
-    pygame.draw.rect(screen, (0, 255, 0), player.food.rectangle)
-    pygame.draw.rect(screen, (255, 0, 0), player.head.rectangle)
+    for i in players:
+        for j in i.tail:
+            grid[j.coords[1]][j.coords[0]] = 1
+
+        i.move()
+        if grid[i.head.coords[1]][i.head.coords[0]] == 1:
+            print("You loose !")
+            running = False
+        i.render_snake(screen)
     pygame.time.delay(100)
     # Flip the display
     pygame.display.flip()
